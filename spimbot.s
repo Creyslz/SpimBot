@@ -44,8 +44,8 @@ next = 12
 
 # What am I doing
 		.align 2
-planet0_array: 	.space 120
-puzzle0_loaded:	.space 4
+planet_array: 	.space 120
+puzzle_loaded:	.space 4
 puzzle0_node:	.space 8192
 puzzle1_node:	.space 8192
 
@@ -78,7 +78,7 @@ main:
 	sub	$sp, $sp, 8
 	sw	$ra, 0($sp)				
 	
-	la	$t8, planet0_array
+	la	$t8, planet_array
 	li	$t0, PLANETS_REQUEST
 	sw	$t8, 0($t0) 
 				
@@ -86,7 +86,7 @@ main:
 	#sw	$t0, LANDING_REQUEST
 	lw	$t0, LANDING_REQUEST
 	li	$t9, 4
-	li	$a0, 4
+	li	$a0, 1
 	beq	$t0, $t9, it_end
 	
 	lw	$t0, LANDING_REQUEST
@@ -178,21 +178,21 @@ beat_opponent:
 	sub	$sp, $sp, 8
 	sw	$ra, 0($sp)
 	move	$t6, $a0	#$t6 is the planet we are on
-	la	$t4, puzzle0_loaded
+	la	$t4, puzzle_loaded
 	sw	$0, 0($t4)
 	
 	la	$t4, puzzle0_node
 	sw	$t4, PUZZLE_REQUEST($0)
 	
 ad_wait_loop:
-	#la	$t4, puzzle0_loaded
+	#la	$t4, puzzle_loaded
 	#lw	$t4, 0($t4)
-	lw	$t4, puzzle0_loaded
+	lw	$t4, puzzle_loaded
 	bne	$t4, $0, ad_delivered
 	j	ad_wait_loop
 ad_delivered:
-	#la	$t4, puzzle0_loaded
-	sw	$0, puzzle0_loaded
+	#la	$t4, puzzle_loaded
+	sw	$0, puzzle_loaded
 	la	$t4, puzzle1_node
 	sw	$t4, PUZZLE_REQUEST($0)
 	
@@ -211,7 +211,7 @@ ad_puzzle_end:
 	la	$t5, puzzle0_node
 	sw	$t5, SOLVE_REQUEST($0)
 	
-	la	$t8, planet0_array		#update planet stuff
+	la	$t8, planet_array		#update planet stuff
 	sw	$t8, PLANETS_REQUEST($0)
 	
 	mul 	$t9, $t6, 24
@@ -221,14 +221,14 @@ ad_puzzle_end:
 	bgt	$t3, $t2, ad_finish_1
 	
 ad_wait1_loop:
-	#la	$t4, puzzle0_loaded
+	#la	$t4, puzzle_loaded
 	#lw	$t4, 0($t4)
-	lw	$t4, puzzle0_loaded
+	lw	$t4, puzzle_loaded
 	bne	$t4, $0, ad_delivered1
 	j	ad_wait1_loop
 ad_delivered1:
-	#la	$t4, puzzle0_loaded
-	sw	$0, puzzle0_loaded
+	#la	$t4, puzzle_loaded
+	sw	$0, puzzle_loaded
 	la	$t4, puzzle0_node
 	sw	$t4, PUZZLE_REQUEST($0)
 	
@@ -244,10 +244,10 @@ ad_puzzle1_loop:
 	j	ad_puzzle1_loop
 	
 ad_puzzle1_end:
-	la	$t5, puzzle0_node
+	la	$t5, puzzle1_node
 	sw	$t5, SOLVE_REQUEST($0)
 	
-	la	$t8, planet0_array		#update planet stuff
+	la	$t8, planet_array		#update planet stuff
 	sw	$t8, PLANETS_REQUEST($0)
 	
 	mul 	$t9, $t6, 24
@@ -260,9 +260,9 @@ ad_puzzle1_end:
 	
 ad_finish_0:
 ad_wait0f_loop:
-	#la	$t4, puzzle0_loaded
+	#la	$t4, puzzle_loaded
 	#lw	$t4, 0($t4)
-	lw	$t4, puzzle0_loaded
+	lw	$t4, puzzle_loaded
 	bne	$t4, $0, ad_delivered0f
 	j	ad_wait0f_loop
 ad_delivered0f:
@@ -287,9 +287,9 @@ ad_puzzle0f_end:
 	
 ad_finish_1:
 ad_wait1f_loop:
-	#la	$t4, puzzle0_loaded
+	#la	$t4, puzzle_loaded
 	#lw	$t4, 0($t4)
-	lw	$t4, puzzle0_loaded
+	lw	$t4, puzzle_loaded
 	bne	$t4, $0, ad_delivered1f
 	j	ad_wait0f_loop
 ad_delivered1f:
@@ -400,7 +400,7 @@ interrupt_dispatch:			# Interrupt:
 	j	done
 
 delivery_interrupt:
-	la	$a0, puzzle0_loaded
+	la	$a0, puzzle_loaded
 	li	$a1, 5
 	sw	$a1, 0($a0)
 	sw	$a1, DELIVERY_ACKNOWLEDGE	# acknowledge interrupt
