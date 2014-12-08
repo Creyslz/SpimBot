@@ -47,22 +47,7 @@ next = 12
 planet0_array: 	.space 120
 puzzle0_loaded:	.space 4
 puzzle0_node:	.space 8192
-		.align 2
-planet1_array: 	.space 120
-puzzle1_loaded:	.space 4
 puzzle1_node:	.space 8192
-		.align 2
-planet2_array: 	.space 120
-puzzle2_loaded:	.space 4
-puzzle2_node:	.space 8192
-		.align 2
-planet3_array: 	.space 120
-puzzle3_loaded:	.space 4
-puzzle3_node:	.space 8192
-		.align 2
-planet4_array: 	.space 120
-puzzle4_loaded:	.space 4
-puzzle4_node:	.space 8192
 
 
 .text
@@ -93,16 +78,18 @@ main:
 	sub	$sp, $sp, 8
 	sw	$ra, 0($sp)				
 	
-	la	$t8, planet_array
+	la	$t8, planet0_array
 	li	$t0, PLANETS_REQUEST
 	sw	$t8, 0($t0) 
-					
-	li	$t0, LANDING_REQUEST
+				
 	
-	li	$t9, -1
-	beq	$t0, $t9, ad_landed
+	#sw	$t0, LANDING_REQUEST
+	lw	$t0, LANDING_REQUEST
+	li	$t9, 4
+	li	$a0, 4
+	beq	$t0, $t9, it_end
 	
-	lw	$t0, 0($t0)
+	lw	$t0, LANDING_REQUEST
 	li	$t1, 0
 	bne	$t1, $t0, it_skip
 	add	$t1, $t1, 1
@@ -177,73 +164,167 @@ it_land_loop:
 	li	$t9, -1
 	bne	$t0, $t9, it_end
 	j	it_land_loop
-it_end:
+it_end:	
+	lw	$ra, 0($sp)
+	add	$sp, $sp, 8
+
+	j	beat_opponent
+
 
 	
-	
-ad_favor_loop:
-	la	$t8, planet_array		#update planet stuff
-	sw	$t8, PLANETS_REQUEST($0)
-	
-	lw	$t7, LANDING_REQUEST($0)
-	
-	mul	$t7, $t7, 24
-	add	$t7, $t7, $t8
-	lw	$t0, favor($t7)
-	li	$t1, 10
-	bge	$t0, $t1, ad_end
-	
-		
-	
-	
-ad_landed:	
-	la	$t4, puzzle_loaded
+
+.globl beat_opponent		#$a0 is the planet we are currently on (0-4)
+beat_opponent:
+	sub	$sp, $sp, 8
+	sw	$ra, 0($sp)
+	move	$t6, $a0	#$t6 is the planet we are on
+	la	$t4, puzzle0_loaded
 	sw	$0, 0($t4)
 	
-	la	$t4, puzzle_node
+	la	$t4, puzzle0_node
 	sw	$t4, PUZZLE_REQUEST($0)
 	
 
 ad_wait_loop:
-	la	$t4, puzzle_loaded
-	lw	$t4, 0($t4)
+	#la	$t4, puzzle0_loaded
+	#lw	$t4, 0($t4)
+	lw	$t4, puzzle0_loaded
 	bne	$t4, $0, ad_delivered
 	j	ad_wait_loop
 ad_delivered:
-	la	$t1, puzzle_node
-					# t1 = current node
+	#la	$t4, puzzle0_loaded
+	sw	$0, puzzle0_loaded
+	la	$t4, puzzle1_node
+	sw	$t4, PUZZLE_REQUEST($0)
+	
+	
+	la	$t5, puzzle0_node
+					# t5 = current node
 
 ad_puzzle_loop: 	
-	beq	$t1, $0, ad_puzzle_end
-	sw	$t1, 4($sp)
-	lw	$a0, 0($t1)
-	lw	$a1, 4($t1)
+	beq	$t5, $0, ad_puzzle_end
+	lw	$a0, 0($t5)
+	lw	$a1, 4($t5)
 	jal	puzzle_solve
-	lw	$t1, 4($sp)
-	sw	$v0, 8($t1)
-	lw	$t1, 12($t1)
+	sw	$v0, 8($t5)
+	lw	$t5, 12($t5)
 	j	ad_puzzle_loop
 	
 ad_puzzle_end:
-	la	$t1, puzzle_node
-	sw	$t1, SOLVE_REQUEST($0)
+	la	$t5, puzzle0_node
+	sw	$t5, SOLVE_REQUEST($0)
 	
-	j	ad_favor_loop
+	la	$t8, planet0_array		#update planet stuff
+	sw	$t8, PLANETS_REQUEST($0)
 	
+	mul 	$t9, $t6, 24
+	add	$t9, $t9, $t8
+	lw	$t3, favor($t9)
+	lw	$t2, enemy_favor($t9)
+	bgt	$t3, $t2, ad_finish_1
+	
+	
+ad_wait1_loop:
+	#la	$t4, puzzle0_loaded
+	#lw	$t4, 0($t4)
+	lw	$t4, puzzle0_loaded
+	bne	$t4, $0, ad_delivered1
+	j	ad_wait1_loop
+ad_delivered1:
+	#la	$t4, puzzle0_loaded
+	sw	$0, puzzle0_loaded
+	la	$t4, puzzle0_node
+	sw	$t4, PUZZLE_REQUEST($0)
+	
+	
+	la	$t5, puzzle1_node
+					# t5 = current node
+
+ad_puzzle1_loop: 	
+	beq	$t5, $0, ad_puzzle1_end
+	lw	$a0, 0($t5)
+	lw	$a1, 4($t5)
+	jal	puzzle_solve
+	sw	$v0, 8($t5)
+	lw	$t5, 12($t5)
+	j	ad_puzzle1_loop
+	
+ad_puzzle1_end:
+	la	$t5, puzzle0_node
+	sw	$t5, SOLVE_REQUEST($0)
+	
+	la	$t8, planet0_array		#update planet stuff
+	sw	$t8, PLANETS_REQUEST($0)
+	
+	mul 	$t9, $t6, 24
+	add	$t9, $t9, $t8
+	lw	$t3, favor($t9)
+	lw	$t2, enemy_favor($t9)
+	bgt	$t3, $t2, ad_finish_0
+	
+	j	ad_wait_loop
+	
+	
+	
+	
+ad_finish_0:
+ad_wait0f_loop:
+	#la	$t4, puzzle0_loaded
+	#lw	$t4, 0($t4)
+	lw	$t4, puzzle0_loaded
+	bne	$t4, $0, ad_delivered0f
+	j	ad_wait0f_loop
+ad_delivered0f:
+	la	$t5, puzzle0_node
+					# t5 = current node
+
+ad_puzzle0f_loop: 	
+	beq	$t5, $0, ad_puzzle0f_end
+	lw	$a0, 0($t5)
+	lw	$a1, 4($t5)
+	jal	puzzle_solve
+	sw	$v0, 8($t5)
+	lw	$t5, 12($t5)
+	j	ad_puzzle0f_loop
+	
+ad_puzzle0f_end:
+	la	$t5, puzzle0_node
+	sw	$t5, SOLVE_REQUEST($0)
+	
+	bgt	$t3, $t2, ad_end
+	
+	
+ad_finish_1:
+ad_wait1f_loop:
+	#la	$t4, puzzle0_loaded
+	#lw	$t4, 0($t4)
+	lw	$t4, puzzle0_loaded
+	bne	$t4, $0, ad_delivered1f
+	j	ad_wait0f_loop
+ad_delivered1f:
+	la	$t5, puzzle1_node
+					# t5 = current node
+
+ad_puzzle1f_loop: 	
+	beq	$t5, $0, ad_puzzle1f_end
+	lw	$a0, 0($t5)
+	lw	$a1, 4($t5)
+	jal	puzzle_solve
+	sw	$v0, 8($t5)
+	lw	$t5, 12($t5)
+	j	ad_puzzle1f_loop
+	
+ad_puzzle1f_end:
+	la	$t5, puzzle1_node
+	sw	$t5, SOLVE_REQUEST($0)
+	
+	bgt	$t3, $t2, ad_end
 	
 ad_end:
-
-	li	$t7, 134
 	lw	$ra, 0($sp)
 	add	$sp, $sp, 8
-
 	jr	$ra
-
 	
-
-.globl beat_opponent
-beat_opponent:
-
 	
 	
 	
@@ -328,7 +409,7 @@ interrupt_dispatch:			# Interrupt:
 	j	done
 
 delivery_interrupt:
-	la	$a0, puzzle_loaded
+	la	$a0, puzzle0_loaded
 	li	$a1, 5
 	sw	$a1, 0($a0)
 	sw	$a1, DELIVERY_ACKNOWLEDGE	# acknowledge interrupt
