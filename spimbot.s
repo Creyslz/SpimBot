@@ -184,7 +184,6 @@ beat_opponent:
 	la	$t4, puzzle0_node
 	sw	$t4, PUZZLE_REQUEST($0)
 	
-
 ad_wait_loop:
 	#la	$t4, puzzle0_loaded
 	#lw	$t4, 0($t4)
@@ -197,9 +196,7 @@ ad_delivered:
 	la	$t4, puzzle1_node
 	sw	$t4, PUZZLE_REQUEST($0)
 	
-	
-	la	$t5, puzzle0_node
-					# t5 = current node
+	la	$t5, puzzle0_node	# t5 = current node
 
 ad_puzzle_loop: 	
 	beq	$t5, $0, ad_puzzle_end
@@ -223,7 +220,6 @@ ad_puzzle_end:
 	lw	$t2, enemy_favor($t9)
 	bgt	$t3, $t2, ad_finish_1
 	
-	
 ad_wait1_loop:
 	#la	$t4, puzzle0_loaded
 	#lw	$t4, 0($t4)
@@ -236,9 +232,7 @@ ad_delivered1:
 	la	$t4, puzzle0_node
 	sw	$t4, PUZZLE_REQUEST($0)
 	
-	
-	la	$t5, puzzle1_node
-					# t5 = current node
+	la	$t5, puzzle1_node	# t5 = current node
 
 ad_puzzle1_loop: 	
 	beq	$t5, $0, ad_puzzle1_end
@@ -261,11 +255,8 @@ ad_puzzle1_end:
 	lw	$t3, favor($t9)
 	lw	$t2, enemy_favor($t9)
 	bgt	$t3, $t2, ad_finish_0
-	
+
 	j	ad_wait_loop
-	
-	
-	
 	
 ad_finish_0:
 ad_wait0f_loop:
