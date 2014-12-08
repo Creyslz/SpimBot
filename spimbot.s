@@ -42,6 +42,7 @@ str = 0
 solution = 8
 next = 12
 
+
 # What am I doing
 		.align 2
 planet_array: 	.space 120
@@ -49,6 +50,11 @@ puzzle_loaded:	.space 4
 puzzle0_node:	.space 8192
 puzzle1_node:	.space 8192
 
+#for arctan
+three:	.float	3.0
+five:	.float	5.0
+PI:	.float	3.141592
+F180:	.float  180.0
 
 .text
 
@@ -67,6 +73,7 @@ main:
 					# t5 = bot y
 					# t8 = planet_array
 					# t9 = temp
+					# a3
 
 
 
@@ -74,103 +81,156 @@ main:
 	li	$t4, DELIVERY_MASK	# deliv interrupt bit
 	or	$t4, $t4, 1		# global interrupt enable
 	mtc0	$t4, $12		# set interrupt mask (Status register)
-					
-	sub	$sp, $sp, 8
-	sw	$ra, 0($sp)				
 	
-	la	$t8, planet_array
-	li	$t0, PLANETS_REQUEST
-	sw	$t8, 0($t0) 
-				
-	
-	#sw	$t0, LANDING_REQUEST
-	lw	$t0, LANDING_REQUEST
-	li	$t9, 4
-	li	$a0, 1
-	beq	$t0, $t9, it_end
-	
-	lw	$t0, LANDING_REQUEST
-	li	$t1, 0
-	bne	$t1, $t0, it_skip
-	add	$t1, $t1, 1
-it_skip:
-	li	$t0, TAKEOFF_REQUEST
-	sw	$t0, 0($t0)
-	
-	li	$t9, 0
-	li	$t0, VELOCITY
-	sw	$t9, 0($t0)
-	
-	mul 	$t9, $t1, 24
-	add	$t9, $t9, $t8
-	lw	$t3, orbital_radius($t9)
-	add	$t3, $t3, 150
-	li	$t2, 150
-	
-it_movex_loop:
-	li	$t4, BOT_X
-	lw	$t4, 0($t4)
-	beq	$t4, $t2, it_movex_end
-	li	$t9, 180
-	bgt	$t4, $t2, it_movex_continue
-	li	$t9, 0
-	
-it_movex_continue:
-	li	$t0, ANGLE
-	sw	$t9, 0($t0)
-	li	$t9, 1
-	li	$t0, ANGLE_CONTROL
-	sw	$t9, 0($t0)
 	
 	li	$t9, 10
-	li	$t0, VELOCITY
-	sw	$t9, 0($t0)
-	j	it_movex_loop
+	sw	$t9, VELOCITY
 	
-it_movex_end:
-	li	$t9, 0
-	li	$t0, VELOCITY
-	sw	$t9, 0($t0)
+	sub	$sp, $sp, 4
+	sw	$ra, 0($sp)	
+	li	$a3, 2
+	li	$a0, 4
+	jal	beat_opponent 
+	li	$a0, 4
+	jal	beat_opponent 
+	li	$a0, 3
+	jal	go_to_planet_x
+	li	$a0, 3
+	jal	beat_opponent 
+	li	$a0, 3
+	jal	beat_opponent 
+woot_loop:
+	move 	$a0, $a3
+	jal	go_to_planet_x
+	move 	$a0, $a3
+	jal	beat_opponent 
+	sub	$a3, $a3, 1
+	bge	$a3, $0, woot_loop
+	li	$a3, 2
+	j	woot_loop
 	
-it_movey_loop:
-	li	$t5, BOT_Y
-	lw	$t5, 0($t5)
-	beq	$t5, $t3, it_movey_end
-	li	$t9, -90
-	bgt	$t5, $t3, it_movey_continue
-	li	$t9, 90
-	
-it_movey_continue:
-	li	$t0, ANGLE
-	sw	$t9, 0($t0)
-	li	$t9, 1
-	li	$t0, ANGLE_CONTROL
-	sw	$t9, 0($t0)
-	
-	li	$t9, 10
-	li	$t0, VELOCITY
-	sw	$t9, 0($t0)
-	j	it_movey_loop
-	
-it_movey_end:
-	li	$t9, 0
-	li	$t0, VELOCITY
-	sw	$t9, 0($t0)
-	
-it_land_loop:
-	li	$t0, LANDING_REQUEST
-	sw	$t0, 0($t0)
-	lw	$t0, 0($t0)
-	li	$t9, -1
-	bne	$t0, $t9, it_end
-	j	it_land_loop
-it_end:	
 	lw	$ra, 0($sp)
-	add	$sp, $sp, 8
+	add	$sp, $sp, 4
+	jr	$ra
+	
+.globl	go_to_planet_x
+go_to_planet_x:
+	sub 	$sp, $sp, 28 
+	sw 	$ra, 0($sp)
+	sw 	$a0, 4($sp)
+	sw 	$s0, 8($sp)
+	sw 	$s1, 12($sp)
+	sw 	$s2, 16($sp)
+	sw 	$s3, 20($sp)
+	sw 	$s4, 24($sp)
 
-	j	beat_opponent
+	sw 	$zero, TAKEOFF_REQUEST
+	li 	$t0, 10
+	sw 	$t0, VELOCITY
+fly:
+	lw 	$s0, BOT_X			#bots x
+	lw 	$s1, BOT_Y			#bots y
+	
+	sw 	$a0, 4($sp)
+	la	$t8, planet_array		#update planet stuff
+	sw	$t8, PLANETS_REQUEST($0)
+	mul 	$a0, $a0, 24
+	add	$a0, $a0, $t8
+	lw 	$s2, planet_x($a0)		#planets x
+	lw 	$s3, planet_y($a0)		#planets y
+	sub 	$t0, $s2, $s0			#diff x
+	sub 	$t1, $s3, $s1			#diff y
+	
+	ble 	$t0, $zero, turn_more	
+	move 	$a0, $t0
+	move 	$a1, $t1
+	jal 	sb_arctan
+	lw 	$a0, 4($sp)
+	sw 	$v0, ANGLE
+	li 	$t0, 1
+	sw 	$t0, ANGLE_CONTROL
+	sw 	$t0, LANDING_REQUEST
+	lw 	$t0, LANDING_REQUEST
+	add 	$t0, $t0, 1
+	bne 	$t0, $zero, turn_done
+	j		fly
+turn_more:
 
+	move 	$a0, $t0
+	move  	$a1, $t1
+	jal 	sb_arctan
+	lw 	$a0, 4($sp)
+	add 	$v0, $v0, 180
+	sw 	$v0, ANGLE
+	li 	$t0 , 1
+	sw 	$t0, ANGLE_CONTROL
+	sw 	$t0, LANDING_REQUEST
+	lw 	$t0, LANDING_REQUEST
+	add 	$t0, $t0, 1
+	bne 	$t0, $zero, turn_done
+	j 	fly
 
+turn_done:
+	
+	lw 	$ra, 0($sp)
+	lw 	$s0, 8($sp)
+	lw 	$s1, 12($sp)
+	lw 	$s2, 16($sp)
+	lw 	$s3, 20($sp)
+	lw 	$s4, 24($sp)
+	add 	$sp, $sp, 28
+	jr 	$ra
+
+.globl sb_arctan
+sb_arctan:
+	li	$v0, 0		# angle = 0;
+
+	abs	$t0, $a0	# get absolute values
+	abs	$t1, $a1
+	ble	$t1, $t0, no_TURN_90	  
+
+	## if (abs(y) > abs(x)) { rotate 90 degrees }
+	move	$t0, $a1	# int temp = y;
+	neg	$a1, $a0	# y = -x;      
+	move	$a0, $t0	# x = temp;    
+	li	$v0, 90		# angle = 90;  
+
+no_TURN_90:
+	bgez	$a0, pos_x 	# skip if (x >= 0)
+
+	## if (x < 0) 
+	add	$v0, $v0, 180	# angle += 180;
+
+pos_x:
+	mtc1	$a0, $f0
+	mtc1	$a1, $f1
+	cvt.s.w $f0, $f0	# convert from ints to floats
+	cvt.s.w $f1, $f1
+	
+	div.s	$f0, $f1, $f0	# float v = (float) y / (float) x;
+
+	mul.s	$f1, $f0, $f0	# v^^2
+	mul.s	$f2, $f1, $f0	# v^^3
+	l.s	$f3, three	# load 5.0
+	div.s 	$f3, $f2, $f3	# v^^3/3
+	sub.s	$f6, $f0, $f3	# v - v^^3/3
+
+	mul.s	$f4, $f1, $f2	# v^^5
+	l.s	$f5, five	# load 3.0
+	div.s 	$f5, $f4, $f5	# v^^5/5
+	add.s	$f6, $f6, $f5	# value = v - v^^3/3 + v^^5/5
+
+	l.s	$f8, PI		# load PI
+	div.s	$f6, $f6, $f8	# value / PI
+	l.s	$f7, F180	# load 180.0
+	mul.s	$f6, $f6, $f7	# 180.0 * value / PI
+
+	cvt.w.s $f6, $f6	# convert "delta" back to integer
+	mfc1	$t0, $f6
+	add	$v0, $v0, $t0	# angle += delta
+
+	jr 	$ra
+	
 	
 
 .globl beat_opponent		#$a0 is the planet we are currently on (0-4)
