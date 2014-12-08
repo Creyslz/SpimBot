@@ -5,7 +5,6 @@ PI:	.float	3.141592
 F180:	.float  180.0
 	
 .text
-
 # -----------------------------------------------------------------------
 # sb_arctan - computes the arctangent of y / x
 # $a0 - x
