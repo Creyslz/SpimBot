@@ -85,18 +85,15 @@ li	$t4, DELIVERY_MASK	# deliv interrupt bit
 
 	li		$t9, 10
 	sw		$t9, VELOCITY
-
 	sub		$sp, $sp, 4
 	sw		$ra, 0($sp)	
 	li		$a3, 2
-	li		$a0, 4
-	jal		beat_opponent 
+#	li		$v1, 2
+	
 	li		$a0, 4
 	jal		beat_opponent 
 	li		$a0, 3
 	jal		go_to_planet_x
-	li		$a0, 3
-	jal		beat_opponent 
 	li		$a0, 3
 	jal		beat_opponent 
 woot_loop:
@@ -106,7 +103,35 @@ woot_loop:
 	jal		beat_opponent 
 	sub		$a3, $a3, 1
 	bge		$a3, $0, woot_loop
+#	sub		$v1, $v1, 1
 	li		$a3, 2 
+#	bne		$v1, $0, woot_loop
+#	li		$v1, 2
+	
+	li		$t6, 3
+	mul 	$t9, $t6, 24
+	add		$t9, $t9, $t8
+	lw		$t3, favor($t9)
+	lw		$t2, enemy_favor($t9)
+	bgt		$t3, $t2, woot_next
+	
+	li		$a0, 3
+	jal		go_to_planet_x
+	li		$a0, 3
+	jal		beat_opponent 
+	
+woot_next:	
+	li		$t6, 4
+	mul 	$t9, $t6, 24
+	add		$t9, $t9, $t8
+	lw		$t3, favor($t9)
+	lw		$t2, enemy_favor($t9)	
+	bgt		$t3, $t2, woot_loop
+	
+	li		$a0, 4
+	jal		go_to_planet_x
+	li		$a0, 4
+	jal		beat_opponent 
 	j		woot_loop
 
 	lw		$ra, 0($sp)
@@ -128,8 +153,6 @@ woot_loop:
 	li 	$s6, 320
 	lw 	$s5, LANDING_REQUEST
 	sw 	$zero, TAKEOFF_REQUEST
-	li 	$t0, 10
-	sw 	$t0, VELOCITY
 fly:
 	lw 		$s0, BOT_X					# bot's x
 	lw 		$s1, BOT_Y					# bot's y
@@ -230,7 +253,8 @@ jr 	$ra
 	beat_opponent:
 	sub	$sp, $sp, 8
 sw	$ra, 0($sp)
-	move	$t6, $a0	#$t6 is the planet we are on
+	#move	$t6, $a0	#$t6 is the planet we are on
+	lw	$t6, LANDING_REQUEST	#$t6 is the planet we are on
 	la	$t4, puzzle_loaded
 sw	$0, 0($t4)
 
@@ -475,4 +499,3 @@ lw	$a1, 4($k0)
 	move	$at, $k1		# Restore $at
 	.set at 
 	eret
-
